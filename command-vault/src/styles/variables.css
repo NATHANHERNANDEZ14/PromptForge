@@ -1,0 +1,46 @@
+/* ═══════════════════════════════════════════════
+   variables.css — Design tokens y CSS custom props
+   ═══════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Backgrounds */
+  --bg-color:        #0b132b;
+  --bg-gradient:     linear-gradient(135deg, #0b132b 0%, #1c2541 100%);
+
+  /* Cards / Glass */
+  --card-bg:         rgba(255, 255, 255, 0.05);
+  --card-border:     rgba(255, 255, 255, 0.10);
+
+  /* Typography */
+  --text-main:       #ffffff;
+  --text-muted:      #94a3b8;
+
+  /* Brand colors */
+  --primary:         #3a86ff;
+  --primary-hover:   #2196f3;
+  --accent:          #ff006e;
+  --danger:          #ef233c;
+  --success:         #06d6a0;
+
+  /* Inputs */
+  --input-bg:        rgba(11, 19, 43, 0.6);
+  --input-border:    rgba(58, 134, 255, 0.4);
+
+  /* Shadows */
+  --shadow-sm:       0 2px 4px rgba(0,0,0,0.3);
+  --shadow-md:       0 8px 16px rgba(0,0,0,0.4);
+  --shadow-lg:       0 15px 30px rgba(0,0,0,0.5), 0 0 25px rgba(58, 134, 255, 0.2);
+
+  /* Transitions */
+  --transition-fast: all 0.2s ease;
+  --transition-std:  all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Border radius */
+  --radius-sm:  0.375rem;
+  --radius-md:  0.75rem;
+  --radius-lg:  1rem;
+  --radius-xl:  1.5rem;
+  --radius-full: 9999px;
+}

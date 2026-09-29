@@ -1,0 +1,10 @@
+/* ═══════════════════════════════════════════════
+   styles/index.css — Punto de entrada de estilos
+   Importa todos los módulos en orden correcto
+   ═══════════════════════════════════════════════ */
+
+@import './variables.css';   /* 1. Design tokens primero */
+@import './base.css';        /* 2. Reset + body */
+@import './animations.css';  /* 3. Keyframes globales */
+@import './components.css';  /* 4. Componentes reutilizables */
+@import './layout.css';      /* 5. Estructura de página */

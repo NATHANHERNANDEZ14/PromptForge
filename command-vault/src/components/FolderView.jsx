@@ -62,23 +62,15 @@ export default function FolderView() {
     setIsEditing(false);
   };
 
-  // ── Helper: monta el HTML en un nodo off-screen para que html2pdf no flashee
-  const buildOffScreenElement = (htmlContent) => {
-    const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;top:0;left:-9999px;width:210mm;background:#fff;z-index:-1;';
-    container.innerHTML = htmlContent;
-    document.body.appendChild(container);
-    return container;
-  };
-
   const handleShare = async () => {
     setGeneratingPdf(true);
     try {
       const html2pdf = (await import('html2pdf.js')).default;
-      const container = buildOffScreenElement(getPdfTemplate(folder, localCommands, title, videoLink, globalDescription));
+      const htmlContent = getPdfTemplate(folder, localCommands, title, videoLink, globalDescription);
       const opt = getPdfConfig(`${folder.name.replace(/\s+/g, '_')}.pdf`);
-      const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
-      document.body.removeChild(container);
+      
+      const pdfBlob = await html2pdf().set(opt).from(htmlContent).outputPdf('blob');
+      
       const file = new File([pdfBlob], `${folder.name.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file], title: folder.name, text: 'Documentacion de flujo Command Vault' }); } catch (err) {}
@@ -97,10 +89,10 @@ export default function FolderView() {
     setGeneratingPdf(true);
     try {
       const html2pdf = (await import('html2pdf.js')).default;
-      const container = buildOffScreenElement(getPdfTemplate(folder, localCommands, title, videoLink, globalDescription));
+      const htmlContent = getPdfTemplate(folder, localCommands, title, videoLink, globalDescription);
       const opt = getPdfConfig(`${folder.name.replace(/\s+/g, '_')}.pdf`);
-      const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
-      document.body.removeChild(container);
+      
+      const pdfBlob = await html2pdf().set(opt).from(htmlContent).outputPdf('blob');
       const url = URL.createObjectURL(pdfBlob);
       setPdfPreviewUrl(url);
     } finally {

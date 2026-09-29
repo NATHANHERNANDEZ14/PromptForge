@@ -49,10 +49,9 @@ export default function Dashboard() {
     const html2pdf = (await import('html2pdf.js')).default;
     const htmlContent = getPdfTemplate(folder, folderCommands, folder.title, folder.videoLink, folder.globalDescription);
     const opt = getPdfConfig(`${folder.name.replace(/\s+/g, '_')}.pdf`);
-    
-    const element = document.createElement('div');
-    element.innerHTML = htmlContent;
-    html2pdf().set(opt).from(element).save();
+
+    // Pasar el string HTML directamente. html2pdf maneja el renderizado internamente.
+    await html2pdf().set(opt).from(htmlContent).save();
   };
 
   const closeModal = () => {
