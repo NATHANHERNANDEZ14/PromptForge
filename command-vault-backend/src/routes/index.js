@@ -28,4 +28,12 @@ const notificationController = require('../controllers/notificationController');
 router.get('/notifications', notificationController.getAll);
 router.put('/notifications/read', notificationController.markAsRead);
 
+// Devices (Almacén de Laptops/PCs)
+const deviceController = require('../controllers/deviceController');
+router.get('/devices', deviceController.getAll);
+router.get('/devices/:id', deviceController.getOne);
+router.post('/devices', deviceController.create);
+router.put('/devices/:id', deviceController.update);
+router.delete('/devices/:id', deviceController.delete);
+
 module.exports = router;

@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, TerminalSquare, Users, LogOut, Terminal, Bell } from 'lucide-react';
+import { LayoutDashboard, TerminalSquare, Users, LogOut, Terminal, Bell, Laptop } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function Navbar() {
@@ -21,6 +21,7 @@ export default function Navbar() {
   const navItems = [
     { name: 'Mis flujos', path: '/', icon: <LayoutDashboard size={18} /> },
     { name: 'Comandos', path: '/commands', icon: <TerminalSquare size={18} /> },
+    { name: 'Almacen de Laptops', path: '/devices', icon: <Laptop size={18} /> },
   ];
 
   if (currentUser?.role === 'admin') {
