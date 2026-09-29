@@ -20,6 +20,7 @@ export default function FolderView() {
   const [localCommands, setLocalCommands] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   useEffect(() => {
     if (folder) {
@@ -61,40 +62,50 @@ export default function FolderView() {
     setIsEditing(false);
   };
 
-  const handleShare = async () => {
-    const html2pdf = (await import('html2pdf.js')).default;
-    const element = document.createElement('div');
-    element.innerHTML = getPdfTemplate(folder, localCommands, title, videoLink, globalDescription);
-    const opt = getPdfConfig(`${folder.name.replace(/\s+/g, '_')}.pdf`);
-    
-    // Generar Blob del PDF
-    const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
-    const file = new File([pdfBlob], `${folder.name.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+  // ── Helper: monta el HTML en un nodo off-screen para que html2pdf no flashee
+  const buildOffScreenElement = (htmlContent) => {
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:0;left:-9999px;width:210mm;background:#fff;z-index:-1;';
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+    return container;
+  };
 
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: folder.name,
-          text: 'Documentación de flujo Command Vault'
-        });
-      } catch (err) {}
-    } else {
-      // Si la plataforma no soporta compartir archivos, lo descargamos directamente
-      html2pdf().set(opt).from(element).save();
-      alert('Tu dispositivo no soporta compartir archivos directamente. El PDF ha sido descargado.');
+  const handleShare = async () => {
+    setGeneratingPdf(true);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const container = buildOffScreenElement(getPdfTemplate(folder, localCommands, title, videoLink, globalDescription));
+      const opt = getPdfConfig(`${folder.name.replace(/\s+/g, '_')}.pdf`);
+      const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
+      document.body.removeChild(container);
+      const file = new File([pdfBlob], `${folder.name.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: folder.name, text: 'Documentacion de flujo Command Vault' }); } catch (err) {}
+      } else {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url; a.download = file.name; a.click();
+        URL.revokeObjectURL(url);
+      }
+    } finally {
+      setGeneratingPdf(false);
     }
   };
 
   const generatePDF = async () => {
-    const html2pdf = (await import('html2pdf.js')).default;
-    const element = document.createElement('div');
-    element.innerHTML = getPdfTemplate(folder, localCommands, title, videoLink, globalDescription);
-    const opt = getPdfConfig(`${folder.name.replace(/\s+/g, '_')}.pdf`);
-    
-    const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
-    const url = URL.createObjectURL(pdfBlob);
-    setPdfPreviewUrl(url);
+    setGeneratingPdf(true);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const container = buildOffScreenElement(getPdfTemplate(folder, localCommands, title, videoLink, globalDescription));
+      const opt = getPdfConfig(`${folder.name.replace(/\s+/g, '_')}.pdf`);
+      const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
+      document.body.removeChild(container);
+      const url = URL.createObjectURL(pdfBlob);
+      setPdfPreviewUrl(url);
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   const copyToClipboard = (text) => {
@@ -251,17 +262,41 @@ export default function FolderView() {
               <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
                 <Edit2 size={18} /> Editar
               </button>
-              <button className="btn btn-ghost" style={{ border: '1px solid var(--card-border)' }} onClick={generatePDF}>
-                <FileText size={18} /> Visualizar PDF
+              <button
+                className="btn btn-ghost"
+                style={{ border: '1px solid var(--card-border)', opacity: generatingPdf ? 0.6 : 1 }}
+                onClick={generatePDF}
+                disabled={generatingPdf}
+              >
+                <FileText size={18} /> {generatingPdf ? 'Generando...' : 'Visualizar PDF'}
               </button>
-              <button className="btn btn-ghost" style={{ border: '1px solid var(--card-border)' }} onClick={handleShare}>
-                <Share2 size={18} /> Compartir
+              <button
+                className="btn btn-ghost"
+                style={{ border: '1px solid var(--card-border)', opacity: generatingPdf ? 0.6 : 1 }}
+                onClick={handleShare}
+                disabled={generatingPdf}
+              >
+                <Share2 size={18} /> {generatingPdf ? 'Generando...' : 'Compartir'}
               </button>
             </>
           )}
         </div>
 
       </div>
+
+      {generatingPdf && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, backdropFilter: 'blur(4px)',
+        }}>
+          <div className="glass" style={{ padding: '2rem 3rem', borderRadius: '1rem', textAlign: 'center' }}>
+            <div style={{ width: 48, height: 48, border: '4px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
+            <p style={{ fontWeight: 600, fontSize: '1rem' }}>Generando PDF...</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Por favor espera un momento</p>
+          </div>
+        </div>
+      )}
 
       {pdfPreviewUrl && (
         <div className="modal-overlay" onClick={() => {

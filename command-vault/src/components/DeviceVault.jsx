@@ -210,7 +210,7 @@ function DeviceCard({ device, onEdit, onDelete }) {
   const [showPass, setShowPass] = useState(false);
   const [copied, setCopied]     = useState(null);
 
-  const typeStyle = TYPE_COLORS[device.type] || TYPE_COLORS['Otro'];
+  const typeStyle = TYPE_COLORS[device.type] || TYPE_COLORS['Celular'];
 
   const copy = async (text, label) => {
     await navigator.clipboard.writeText(text);
@@ -339,13 +339,21 @@ function DeviceCard({ device, onEdit, onDelete }) {
         </p>
       )}
 
-      {/* Estado */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '0.35rem',
-        fontSize: '0.72rem', color: device.active ? 'var(--success)' : 'var(--danger)',
-      }}>
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor' }} />
-        {device.active ? 'Activo' : 'Inactivo'}
+      {/* Estado Ocupado / Libre */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+          fontSize: '0.72rem', fontWeight: 700,
+          padding: '0.25rem 0.7rem', borderRadius: '1rem',
+          background: device.username ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
+          color: device.username ? '#ef4444' : 'var(--success)',
+        }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+          {device.username ? 'Ocupado' : 'Libre'}
+        </div>
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+          {device.active ? 'Activo' : 'Inactivo'}
+        </div>
       </div>
     </div>
   );
@@ -357,6 +365,7 @@ export default function DeviceVault() {
   const [loading, setLoading]     = useState(true);
   const [searchTerm, setSearch]   = useState('');
   const [filterType, setFilter]   = useState('Todos');
+  const [viewMode, setViewMode]   = useState('todos');   // 'todos' | 'ocupados' | 'libres'
   const [showModal, setShowModal] = useState(false);
   const [editDevice, setEdit]     = useState(null);
 
@@ -401,14 +410,23 @@ export default function DeviceVault() {
 
   const filtered = devices.filter(d => {
     const matchType   = filterType === 'Todos' || d.type === filterType;
+    const matchStatus =
+      viewMode === 'todos'    ? true :
+      viewMode === 'ocupados' ? (d.username && d.username.trim() !== '') :
+                                (!d.username || d.username.trim() === '');
     const q           = searchTerm.toLowerCase();
     const matchSearch = !q || [d.name, d.ip, d.mac, d.username, d.rustdeskId, d.notes]
       .some(v => v && v.toLowerCase().includes(q));
-    return matchType && matchSearch;
+    return matchType && matchStatus && matchSearch;
   });
 
+  const ocupados = devices.filter(d => d.username && d.username.trim() !== '').length;
+  const libres   = devices.filter(d => !d.username || d.username.trim() === '').length;
+
   const stats = [
-    { label: 'Total', count: devices.length, color: 'var(--primary)', icon: <Monitor size={20} /> },
+    { label: 'Total',    count: devices.length, color: 'var(--primary)', icon: <Monitor size={20} /> },
+    { label: 'Ocupados', count: ocupados,        color: '#ef4444',        icon: <span style={{ fontSize: 18, lineHeight: 1 }}>&#128100;</span> },
+    { label: 'Libres',   count: libres,          color: 'var(--success)', icon: <span style={{ fontSize: 18, lineHeight: 1 }}>&#10003;</span> },
     ...DEVICE_TYPES.map(t => ({
       label: t, count: devices.filter(d => d.type === t).length,
       color: TYPE_COLORS[t]?.color,
@@ -446,6 +464,33 @@ export default function DeviceVault() {
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.label}</div>
             </div>
           </div>
+        ))}
+      </div>
+
+      {/* Tabs de vista: Todos / Ocupados / Libres */}
+      <div style={{ display: 'flex', gap: '0', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '0.3rem', width: 'fit-content' }}>
+        {[
+          { key: 'todos',    label: 'General',  count: devices.length },
+          { key: 'ocupados', label: 'Ocupados', count: ocupados },
+          { key: 'libres',   label: 'Libres',   count: libres },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setViewMode(tab.key)} style={{
+            padding: '0.5rem 1.25rem', borderRadius: '0.5rem', border: 'none',
+            cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
+            transition: 'all 0.2s',
+            background: viewMode === tab.key ? 'var(--primary)' : 'transparent',
+            color:      viewMode === tab.key ? 'white' : 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+          }}>
+            {tab.label}
+            <span style={{
+              fontSize: '0.7rem', fontWeight: 800,
+              background: viewMode === tab.key ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+              color:      viewMode === tab.key ? 'white' : 'var(--text-muted)',
+              borderRadius: '1rem', padding: '0.1rem 0.5rem',
+              minWidth: 20, textAlign: 'center',
+            }}>{tab.count}</span>
+          </button>
         ))}
       </div>
 
