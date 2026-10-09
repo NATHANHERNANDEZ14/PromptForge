@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { authApi, tokenStorage } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -7,40 +8,66 @@ export function AuthProvider({ children }) {
     const saved = localStorage.getItem('cv_currentUser');
     return saved ? JSON.parse(saved) : null;
   });
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('cv_currentUser', JSON.stringify(currentUser));
-    } else {
+    // Check if stored token is still valid on boot
+    const verifySession = async () => {
+      const token = tokenStorage.get();
+      if (token && currentUser) {
+        try {
+          const freshUser = await authApi.me();
+          setCurrentUser(prev => ({ ...prev, ...freshUser }));
+          localStorage.setItem('cv_currentUser', JSON.stringify({ ...currentUser, ...freshUser }));
+        } catch (err) {
+          console.warn('Session verification failed, logging out:', err.message);
+          tokenStorage.remove();
+          localStorage.removeItem('cv_currentUser');
+          setCurrentUser(null);
+        }
+      }
+      setLoadingAuth(false);
+    };
+
+    verifySession();
+
+    // Listen for global unauthorized events (e.g. 401 response from backend)
+    const handleUnauthorized = () => {
+      setCurrentUser(null);
+      tokenStorage.remove();
       localStorage.removeItem('cv_currentUser');
-    }
-  }, [currentUser]);
+    };
+
+    window.addEventListener('cv:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('cv:unauthorized', handleUnauthorized);
+  }, []);
 
   const login = async (username, password) => {
     try {
-      const res = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
+      const data = await authApi.login(username, password);
       
-      if(res.ok) {
-        setCurrentUser(data);
+      if (data && data.token) {
+        tokenStorage.set(data.token);
+        const { token, ...userData } = data;
+        const userWithToken = { ...userData, token };
+        setCurrentUser(userWithToken);
+        localStorage.setItem('cv_currentUser', JSON.stringify(userWithToken));
         return { success: true };
       }
-      return { success: false, error: data.error || 'Error al iniciar sesión' };
+      return { success: false, error: 'Respuesta inválida del servidor.' };
     } catch (error) {
-      return { success: false, error: 'Error de conexión con el servidor' };
+      return { success: false, error: error.message || 'Error al iniciar sesión.' };
     }
   };
 
   const logout = () => {
+    tokenStorage.remove();
+    localStorage.removeItem('cv_currentUser');
     setCurrentUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, loadingAuth }}>
       {children}
     </AuthContext.Provider>
   );

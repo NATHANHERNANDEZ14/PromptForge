@@ -1,89 +1,135 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { foldersApi, commandsApi, usersApi, tokenStorage } from '../services/api';
 
 const DataContext = createContext();
-const API_URL = 'http://localhost:3000/api';
 
 export function DataProvider({ children }) {
   const [folders, setFolders] = useState([]);
   const [commands, setCommands] = useState([]);
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetch(`${API_URL}/folders`).then(res => res.json()).then(setFolders).catch(console.error);
-    fetch(`${API_URL}/commands`).then(res => res.json()).then(setCommands).catch(console.error);
-    fetch(`${API_URL}/users`).then(res => res.json()).then(data => {
-      if(data.length === 0) {
-        // Create initial admin if no users
-        fetch(`${API_URL}/users`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'Main Admin', username: 'admin', password: 'password', role: 'admin' })
-        }).then(res => res.json()).then(newUser => setUsers([newUser]));
-      } else {
-        setUsers(data);
+  const loadData = useCallback(async () => {
+    // Only attempt loading if token exists
+    const token = tokenStorage.get();
+    if (!token) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [foldersData, commandsData] = await Promise.all([
+        foldersApi.getAll().catch(err => {
+          console.error('Error fetching folders:', err);
+          return [];
+        }),
+        commandsApi.getAll().catch(err => {
+          console.error('Error fetching commands:', err);
+          return [];
+        })
+      ]);
+
+      setFolders(foldersData || []);
+      setCommands(commandsData || []);
+
+      // Attempt to load users (may fail with 403 if not admin, which is handled gracefully)
+      try {
+        const usersData = await usersApi.getAll();
+        setUsers(usersData || []);
+      } catch (userErr) {
+        // Non-admin users cannot list all users, normal behavior
       }
-    }).catch(console.error);
+    } catch (err) {
+      console.error('Data loading error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const addFolder = async (name) => {
-    const res = await fetch(`${API_URL}/folders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    });
-    const newFolder = await res.json();
-    setFolders([...folders, newFolder]);
-    return newFolder.id;
+  useEffect(() => {
+    loadData();
+
+    const handleLoginSuccess = () => loadData();
+    window.addEventListener('cv:login_success', handleLoginSuccess);
+    return () => window.removeEventListener('cv:login_success', handleLoginSuccess);
+  }, [loadData]);
+
+  const addFolder = async (folderData) => {
+    const payload = typeof folderData === 'string' ? { name: folderData } : folderData;
+    const newFolder = await foldersApi.create(payload);
+    setFolders(prev => [newFolder, ...prev]);
+    return newFolder.id || newFolder._id;
   };
 
-  const updateFolder = async (id, name) => {
-    const res = await fetch(`${API_URL}/folders/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    });
-    const updated = await res.json();
-    setFolders(folders.map(f => f.id === id ? updated : f));
+  const updateFolder = async (id, folderData) => {
+    const payload = typeof folderData === 'string' ? { name: folderData } : folderData;
+    const updated = await foldersApi.update(id, payload);
+    setFolders(prev => prev.map(f => (f.id === id || f._id === id) ? updated : f));
+    return updated;
   };
 
   const deleteFolder = async (id) => {
-    await fetch(`${API_URL}/folders/${id}`, { method: 'DELETE' });
-    setFolders(folders.filter(f => f.id !== id));
-    setCommands(commands.filter(c => c.folderId !== id));
+    await foldersApi.delete(id);
+    setFolders(prev => prev.filter(f => f.id !== id && f._id !== id));
+    setCommands(prev => prev.filter(c => c.folderId !== id));
+  };
+
+  const duplicateFolder = async (id) => {
+    const duplicated = await foldersApi.duplicate(id);
+    setFolders(prev => [duplicated, ...prev]);
+    // Refresh commands as well to get cloned commands
+    const freshCmds = await commandsApi.getAll();
+    setCommands(freshCmds || []);
+    return duplicated;
   };
 
   const saveFolderContent = async (folderId, details) => {
-    // details: { title, videoLink, globalDescription, commands: [] }
     const { commands: newCommands, ...folderData } = details;
-    
-    // Update folder
-    const resFolder = await fetch(`${API_URL}/folders/${folderId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(folderData)
-    });
-    const updatedFolder = await resFolder.json();
-    setFolders(folders.map(f => f.id === folderId ? updatedFolder : f));
 
-    // Update commands
+    // Update folder metadata
+    const updatedFolder = await foldersApi.update(folderId, folderData);
+    setFolders(prev => prev.map(f => (f.id === folderId || f._id === folderId) ? updatedFolder : f));
+
+    // Update commands for this folder
     if (newCommands) {
-      const resCmds = await fetch(`${API_URL}/folders/${folderId}/commands`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commands: newCommands })
-      });
-      const savedCommands = await resCmds.json();
-      setCommands([...commands.filter(c => c.folderId !== folderId), ...savedCommands]);
+      const savedCommands = await commandsApi.saveForFolder(folderId, newCommands);
+      setCommands(prev => [
+        ...prev.filter(c => c.folderId !== folderId),
+        ...(savedCommands || [])
+      ]);
+    }
+  };
+
+  const recordCommandCopy = async (commandId) => {
+    try {
+      const updated = await commandsApi.recordCopy(commandId);
+      if (updated) {
+        setCommands(prev => prev.map(c => (c.id === commandId || c._id === commandId) ? updated : c));
+      }
+    } catch (err) {
+      console.warn('Could not record copy count:', err);
     }
   };
 
   return (
     <DataContext.Provider value={{
-      folders, addFolder, updateFolder, deleteFolder,
-      commands, setCommands,
-      users, setUsers,
+      folders,
+      setFolders,
+      addFolder,
+      updateFolder,
+      deleteFolder,
+      duplicateFolder,
+      commands,
+      setCommands,
+      recordCommandCopy,
+      users,
+      setUsers,
       saveFolderContent,
-      API_URL
+      loading,
+      error,
+      refreshData: loadData
     }}>
       {children}
     </DataContext.Provider>

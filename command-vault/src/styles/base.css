@@ -18,11 +18,12 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg-gradient);
   background-attachment: fixed;
+  background-color: var(--bg-color);
   color: var(--text-main);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 a {
@@ -37,6 +38,7 @@ img, svg {
 
 button {
   font-family: inherit;
+  cursor: pointer;
 }
 
 select,
@@ -47,25 +49,50 @@ input {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  line-height: 1.2;
+  line-height: 1.25;
   font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-/* Scrollbar global */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+/* ── Scrollbar global ───────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(58,134,255,0.4);
+  background: rgba(58,134,255,0.3);
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
-/* Text utilities */
-.text-primary  { color: var(--primary); }
-.text-accent   { color: var(--accent); }
-.text-muted    { color: var(--text-muted); }
-.text-success  { color: var(--success); }
-.text-danger   { color: var(--danger); }
+/* ── Text utilities ─────────────────────────── */
+.text-primary   { color: var(--primary); }
+.text-accent    { color: var(--accent); }
+.text-muted     { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+.text-success   { color: var(--success); }
+.text-warning   { color: var(--warning); }
+.text-danger    { color: var(--danger); }
+
+/* ── Spacing utilities ──────────────────────── */
+.mt-auto { margin-top: auto; }
+.ml-auto { margin-left: auto; }
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border-width: 0;
+}
