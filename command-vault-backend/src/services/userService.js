@@ -2,7 +2,9 @@ const userRepo = require('../repositories/userRepository');
 class UserService {
   async login(username, password) {
     const user = await userRepo.findByUsername(username);
-    if(user && user.password === password) return user;
+    if (user && await user.comparePassword(password)) {
+      return user;
+    }
     return null;
   }
   async getAllUsers() { return await userRepo.findAll(); }

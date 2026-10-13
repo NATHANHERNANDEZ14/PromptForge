@@ -13,7 +13,9 @@ import {
   Info,
   AlertTriangle,
   BellOff,
-  ChevronRight
+  ChevronRight,
+  UserSquare2,
+  Trash2
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { notificationsApi } from '../services/api';
@@ -41,7 +43,7 @@ function timeAgo(dateStr) {
 }
 
 // ── NotificationPanel ────────────────────────────────────────────────────────
-function NotificationPanel({ notifications, onClose }) {
+function NotificationPanel({ notifications, onClose, onClearAll }) {
   const unread = notifications.filter(n => !n.read).length;
 
   return (
@@ -56,14 +58,28 @@ function NotificationPanel({ notifications, onClose }) {
             </span>
           )}
         </span>
-        <button
-          className="btn-icon"
-          onClick={onClose}
-          title="Cerrar"
-          style={{ width: 28, height: 28, border: 'none', color: 'var(--text-muted)' }}
-        >
-          <ChevronRight size={14} />
-        </button>
+        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+          {notifications.length > 0 && (
+            <button
+              className="btn-icon"
+              onClick={onClearAll}
+              title="Limpiar todas"
+              style={{ width: 28, height: 28, border: 'none', color: 'var(--text-muted)' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-dim)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+          <button
+            className="btn-icon"
+            onClick={onClose}
+            title="Cerrar"
+            style={{ width: 28, height: 28, border: 'none', color: 'var(--text-muted)' }}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="notif-panel-body">
@@ -108,7 +124,8 @@ export default function Navbar() {
   ];
 
   if (currentUser?.role === 'admin') {
-    navItems.push({ name: 'Administración', path: '/admin', Icon: Users });
+    navItems.push({ name: 'Empleados',      path: '/employees', Icon: UserSquare2 });
+    navItems.push({ name: 'Administración', path: '/admin',     Icon: Users });
   }
 
   // Fetch notificaciones
@@ -143,6 +160,15 @@ export default function Navbar() {
       } catch (err) {
         console.error('[Notifs] Error al marcar como leídas:', err);
       }
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await notificationsApi.clearAll();
+      setNotifications([]);
+    } catch (err) {
+      console.error('[Notifs] Error al limpiar notificaciones:', err);
     }
   };
 
@@ -262,6 +288,7 @@ export default function Navbar() {
               <NotificationPanel
                 notifications={notifications}
                 onClose={() => setShowNotifs(false)}
+                onClearAll={handleClearAll}
               />
             )}
           </div>

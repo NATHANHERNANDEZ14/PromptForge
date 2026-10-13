@@ -9,6 +9,7 @@ import FolderView from './components/FolderView';
 import CommandsList from './components/CommandsList';
 import Administration from './components/Administration';
 import DeviceVault from './components/DeviceVault';
+import Employees from './components/Employees';
 
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth();
@@ -34,6 +35,7 @@ function AppContent() {
       <Route path="/commands" element={<ProtectedRoute><CommandsList /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><Administration /></ProtectedRoute>} />
       <Route path="/devices" element={<ProtectedRoute><DeviceVault /></ProtectedRoute>} />
+      <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
     </Routes>
   );
 }

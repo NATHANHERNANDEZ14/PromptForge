@@ -140,6 +140,9 @@ export const notificationsApi = {
   getAll: () => apiRequest('/notifications'),
   markAsRead: () => apiRequest('/notifications/read', {
     method: 'PUT'
+  }),
+  clearAll: () => apiRequest('/notifications', {
+    method: 'DELETE'
   })
 };
 
@@ -152,6 +155,26 @@ export const areasApi = {
   })
 };
 
+// --- Employees API ---
+export const employeesApi = {
+  getAll: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/employees${qs ? '?' + qs : ''}`);
+  },
+  getById: (id) => apiRequest(`/employees/${id}`),
+  create: (data) => apiRequest('/employees', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  update: (id, data) => apiRequest(`/employees/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  }),
+  delete: (id) => apiRequest(`/employees/${id}`, {
+    method: 'DELETE'
+  })
+};
+
 export default {
   auth: authApi,
   folders: foldersApi,
@@ -160,5 +183,6 @@ export default {
   users: usersApi,
   notifications: notificationsApi,
   areas: areasApi,
+  employees: employeesApi,
   API_URL
 };

@@ -3,11 +3,12 @@ import {
   Monitor, Plus, Search, Eye, EyeOff, Copy, Edit2,
   Trash2, RefreshCw, Wifi, Shield, Laptop, Server, Cpu, X, Save,
   Check, Phone, FileSpreadsheet, FileText, Lock, PlusCircle,
-  Hash, UserCheck, HardDrive, Smartphone, CheckCircle2
+  Hash, UserCheck, HardDrive, Smartphone, CheckCircle2, ChevronDown, User
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 import { devicesApi, areasApi } from '../services/api';
+import { employeesApi } from '../services/api';
 import { confirmDialog, showToast, showError } from '../utils/alerts';
 import { exportDevicesToExcel, exportDevicesToPDF } from '../utils/deviceExport';
 
@@ -83,6 +84,48 @@ function DeviceModal({ device, areas, onClose, onSave, onAddNewArea }) {
   const [showPass, setShowPass] = useState(false);
   const [saving, setSaving]     = useState(false);
 
+  // ── Employee picker ─────────────────────────────────────────────────────
+  const [employees, setEmployees]         = useState([]);
+  const [empSearch, setEmpSearch]         = useState('');
+  const [empOpen, setEmpOpen]             = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+  // Cargar empleados filtrados por área cuando cambia el área
+  useEffect(() => {
+    if (!form.area) return;
+    employeesApi.getAll({ departamento: form.area, activo: true })
+      .then(data => setEmployees(data || []))
+      .catch(() => setEmployees([]));
+  }, [form.area]);
+
+  // Si estamos editando y hay username+noNomina, inicializar label del picker
+  useEffect(() => {
+    if (device?.username) {
+      setSelectedEmployee({ display: device.username, noNomina: device.noNomina || '' });
+    }
+  }, []);
+
+  const empFiltered = employees.filter(e => {
+    const q = empSearch.toLowerCase();
+    return !q ||
+      `${e.nombre} ${e.apellidoPaterno} ${e.apellidoMaterno}`.toLowerCase().includes(q) ||
+      e.noNomina.toLowerCase().includes(q);
+  });
+
+  const selectEmployee = (emp) => {
+    const display = `${emp.nombre} ${emp.apellidoPaterno} ${emp.apellidoMaterno || ''}`.trim();
+    setSelectedEmployee({ display, noNomina: emp.noNomina });
+    setForm(prev => ({ ...prev, username: display, noNomina: emp.noNomina }));
+    setEmpOpen(false);
+    setEmpSearch('');
+  };
+
+  const clearEmployee = () => {
+    setSelectedEmployee(null);
+    setForm(prev => ({ ...prev, username: '', noNomina: '' }));
+  };
+  // ───────────────────────────────────────────────────────────────────────
+
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
   const handleGenPass = () => set('password', generatePassword());
 
@@ -154,18 +197,94 @@ function DeviceModal({ device, areas, onClose, onSave, onAddNewArea }) {
               </select>
             </div>
 
-            <div>
-              <label style={labelStyle}>Usuario Asignado</label>
-              <input className="input-field" value={form.username}
-                onChange={e => set('username', e.target.value)}
-                placeholder="Ej. Juan Pérez (jperez)" />
+            {/* ── Usuario Asignado (Employee Picker) ── */}
+            <div style={{ position: 'relative' }}>
+              <label style={labelStyle}>
+                <User size={12} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />
+                Usuario Asignado
+              </label>
+              {selectedEmployee ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-sm)', padding: '0.5rem 0.75rem', minHeight: '42px' }}>
+                  <UserCheck size={14} style={{ color: 'var(--success)', flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedEmployee.display}</div>
+                    {selectedEmployee.noNomina && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{selectedEmployee.noNomina}</div>}
+                  </div>
+                  <button type="button" className="btn-icon danger" style={{ width: 24, height: 24, border: 'none', flexShrink: 0 }} onClick={clearEmployee} title="Quitar asignación">
+                    <X size={12} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEmpOpen(o => !o)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-sm)', padding: '0.65rem 1rem', color: 'var(--text-muted)', fontSize: '0.875rem', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <User size={14} />
+                  <span style={{ flex: 1 }}>Seleccionar empleado del área...</span>
+                  <ChevronDown size={13} style={{ flexShrink: 0 }} />
+                </button>
+              )}
+
+              {/* Dropdown picker */}
+              {empOpen && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#0f172a', border: '1px solid var(--card-border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 200, maxHeight: 240, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--card-border)' }}>
+                    <input
+                      className="input-field"
+                      style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem' }}
+                      placeholder="Buscar nombre o nómina..."
+                      value={empSearch}
+                      onChange={e => setEmpSearch(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div style={{ overflowY: 'auto', maxHeight: 185 }}>
+                    {empFiltered.length === 0 ? (
+                      <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        {employees.length === 0 ? 'No hay empleados en esta área.' : 'Sin resultados.'}
+                      </div>
+                    ) : (
+                      empFiltered.map(emp => (
+                        <button
+                          key={emp._id || emp.id}
+                          type="button"
+                          onClick={() => selectEmployee(emp)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.6rem 0.875rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(58,134,255,0.08)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'linear-gradient(135deg, var(--primary), var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.75rem', flexShrink: 0 }}>
+                            {emp.nombre?.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {emp.nombre} {emp.apellidoPaterno} {emp.apellidoMaterno || ''}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{emp.noNomina}</div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
+            {/* No. Nómina (solo lectura cuando viene del picker) */}
             <div>
-              <label style={labelStyle}>No. Nómina</label>
-              <input className="input-field" value={form.noNomina}
+              <label style={labelStyle}>
+                <Hash size={12} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />
+                No. Nómina
+              </label>
+              <input
+                className="input-field"
+                value={form.noNomina}
                 onChange={e => set('noNomina', e.target.value)}
-                placeholder="Ej. NOM-8492" />
+                placeholder={selectedEmployee ? selectedEmployee.noNomina || '' : 'Ej. NOM-8492'}
+                readOnly={Boolean(selectedEmployee)}
+                style={{ opacity: selectedEmployee ? 0.7 : 1 }}
+              />
             </div>
 
             <div>

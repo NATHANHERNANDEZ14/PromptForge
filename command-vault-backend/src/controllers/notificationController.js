@@ -18,6 +18,15 @@ class NotificationController {
       res.status(500).json({ error: 'Error updating notifications' });
     }
   }
+
+  async clearAll(req, res) {
+    try {
+      await Notification.deleteMany({});
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: 'Error deleting notifications' });
+    }
+  }
 }
 
 module.exports = new NotificationController();

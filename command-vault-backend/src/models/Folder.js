@@ -4,7 +4,11 @@ const folderSchema = new mongoose.Schema({
   name: { type: String, required: true },
   title: { type: String, default: '' },
   videoLink: { type: String, default: '' },
-  globalDescription: { type: String, default: '' }
+  globalDescription: { type: String, default: '' },
+  category: { type: String, default: 'General' },
+  tags: { type: [String], default: [] },
+  favorite: { type: Boolean, default: false },
+  createdBy: { type: String, default: '' }
 }, { timestamps: true });
 
 folderSchema.set('toJSON', {
