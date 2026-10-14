@@ -11,6 +11,7 @@ const userController = require('../controllers/userController');
 const notificationController = require('../controllers/notificationController');
 const deviceController = require('../controllers/deviceController');
 const areaController = require('../controllers/areaController');
+const departmentController = require('../controllers/departmentController');
 const employeeController = require('../controllers/employeeController');
 
 // --- Auth Routes ---
@@ -52,7 +53,12 @@ router.post('/devices', authenticateToken, deviceController.create);
 router.put('/devices/:id', authenticateToken, deviceController.update);
 router.delete('/devices/:id', authenticateToken, deviceController.delete);
 
-// --- Areas Routes ---
+// --- Departments Routes ---
+router.get('/departments', authenticateToken, departmentController.getAll);
+router.post('/departments', authenticateToken, departmentController.create);
+router.delete('/departments/:id', authenticateToken, requireAdmin, departmentController.delete);
+
+// --- Areas Routes (Alias compatible) ---
 router.get('/areas', authenticateToken, areaController.getAll);
 router.post('/areas', authenticateToken, areaController.create);
 

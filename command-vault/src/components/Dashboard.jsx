@@ -1,13 +1,15 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
-import { 
-  Search, FolderPlus, MoreVertical, FolderOpen, Clock, Command, 
-  Terminal, FileText, Copy, Download, Upload, Loader2
-} from 'lucide-react';
+import { Search, FolderPlus, MoreVertical, FolderOpen, Clock, Command, Terminal, FileText, Copy, Download, Upload, Loader2} from 'lucide-react';
 
 import { getPdfTemplate, getPdfConfig } from '../utils/pdfTemplate';
 import { confirmDialog, showToast, showError, showSuccess } from '../utils/alerts';
+
+// Estilos
+import DashboardStyles from '../styles/dashboardStyles';
+
+const S = DashboardStyles;
 
 const WORKFLOW_CATEGORIES = [
   'Todos',
@@ -20,24 +22,15 @@ const WORKFLOW_CATEGORIES = [
 ];
 
 export default function Dashboard() {
-  const { 
-    folders, 
-    commands, 
-    addFolder, 
-    updateFolder, 
-    deleteFolder, 
-    duplicateFolder,
-    saveFolderContent,
-    loading 
-  } = useData();
+  const {folders, commands, addFolder, updateFolder, deleteFolder, duplicateFolder, saveFolderContent, loading } = useData();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm,       setSearchTerm]       = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingFolder, setEditingFolder] = useState(null);
-  const [folderForm, setFolderForm] = useState({ name: '', category: 'General', tags: '' });
-  const [menuOpen, setMenuOpen] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isModalOpen,      setIsModalOpen]      = useState(false);
+  const [editingFolder,    setEditingFolder]    = useState(null);
+  const [folderForm,       setFolderForm]       = useState({ name: '', category: 'General', tags: '' });
+  const [menuOpen,         setMenuOpen]         = useState(null);
+  const [isProcessing,     setIsProcessing]     = useState(false);
 
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
@@ -71,14 +64,12 @@ export default function Dashboard() {
     }
   };
 
-  const openCreateModal = () => {
-    setEditingFolder(null);
+  const openCreateModal = () => {setEditingFolder(null);
     setFolderForm({ name: '', category: 'General', tags: '' });
     setIsModalOpen(true);
   };
 
-  const openEditModal = (folder) => {
-    setEditingFolder(folder);
+  const openEditModal = (folder) => {setEditingFolder(folder);
     setFolderForm({
       name: folder.name || '',
       category: folder.category || 'General',
@@ -227,16 +218,16 @@ export default function Dashboard() {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.5rem', background: 'var(--primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block' }}>
+      <div style={S.heroSection}>
+        <h1 style={S.heroTitle}>
           COMMAND VAULT
         </h1>
-        <p style={{ color: 'var(--text-muted)' }}>Gestiona y documenta tus flujos de trabajo, comandos y equipos</p>
+        <p style={S.heroSubtitle}>Gestiona y documenta tus flujos de trabajo, comandos y equipos</p>
       </div>
 
       {/* Main Bar with Search, Stats & Actions */}
-      <div className="glass" style={{ padding: '1.5rem', borderRadius: '1rem', marginBottom: '1.5rem' }}>
-        <div className="search-bar-container" style={{ marginBottom: '1.25rem' }}>
+      <div className="glass" style={S.mainBar}>
+        <div className="search-bar-container" style={S.searchBarContainer}>
           <div className="search-input-wrapper">
             <Search className="search-icon" size={20} />
             <input 
@@ -248,11 +239,11 @@ export default function Dashboard() {
             />
           </div>
           <div className="stats-container">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={S.statsContainer}>
               <FolderOpen size={16} className="text-primary" />
               <span>{folders.length} Carpetas</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={S.statsContainer}>
               <Command size={16} className="text-accent" />
               <span>{commands.length} Comandos</span>
             </div>
@@ -260,19 +251,14 @@ export default function Dashboard() {
         </div>
 
         {/* Categories Bar */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginRight: '0.25rem' }}>Categoría:</span>
+        <div style={S.categoryBar}>
+          <span style={S.categoryLabel}>Categoría:</span>
           {WORKFLOW_CATEGORIES.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={selectedCategory === cat ? 'btn btn-primary' : 'btn btn-ghost'}
-              style={{
-                fontSize: '0.8rem',
-                padding: '0.35rem 0.85rem',
-                borderRadius: '1rem',
-                border: selectedCategory === cat ? 'none' : '1px solid rgba(255,255,255,0.08)'
-              }}
+              style={S.categoryButton(selectedCategory === cat)}
             >
               {cat}
             </button>
@@ -280,8 +266,8 @@ export default function Dashboard() {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', flexWrap: 'wrap', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid var(--card-border)' }}>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={S.actionsBar}>
+          <div style={S.leftActions}>
             <input
               type="file"
               ref={fileInputRef}
@@ -294,7 +280,7 @@ export default function Dashboard() {
               onClick={() => fileInputRef.current?.click()} 
               disabled={isProcessing}
               title="Importar un archivo de flujo .JSON"
-              style={{ fontSize: '0.85rem' }}
+              style={S.importButton}
             >
               <Upload size={16} /> Importar Flujo JSON
             </button>
@@ -309,15 +295,15 @@ export default function Dashboard() {
 
       {/* Grid of Folders */}
       {loading ? (
-        <div className="glass" style={{ padding: '4rem', textAlign: 'center', borderRadius: '1rem', color: 'var(--text-muted)' }}>
+        <div className="glass" style={S.loadingCard}>
           <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto 1rem', color: 'var(--primary)' }} />
           <p>Cargando flujos de trabajo...</p>
         </div>
       ) : filteredFolders.length === 0 ? (
-        <div className="glass" style={{ padding: '3.5rem', textAlign: 'center', borderRadius: '1rem', color: 'var(--text-muted)' }}>
+        <div className="glass" style={S.emptyCard}>
           <FolderOpen size={48} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>No se encontraron carpetas</h3>
-          <p style={{ maxWidth: '400px', margin: '0 auto 1.5rem', fontSize: '0.9rem' }}>
+          <h3 style={S.emptyTitle}>No se encontraron carpetas</h3>
+          <p style={S.emptyText}>
             {searchTerm || selectedCategory !== 'Todos'
               ? 'Prueba modificando los filtros de búsqueda o categoría.'
               : 'Comienza creando tu primera carpeta para organizar flujos técnicos de comandos.'}
@@ -335,40 +321,40 @@ export default function Dashboard() {
             
             return (
               <div key={folderId} className="folder-card glass">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: 42, height: 42, borderRadius: '0.75rem', background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                <div style={S.folderCardHeader}>
+                  <div style={S.folderCardLeft}>
+                    <div style={S.folderIconBox}>
                       <Terminal size={22} />
                     </div>
                     {folder.category && (
-                      <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '1rem', background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <span style={S.categoryBadge}>
                         {folder.category}
                       </span>
                     )}
                   </div>
                   
-                  <div style={{ position: 'relative' }}>
+                  <div style={S.menuWrapper}>
                     <button 
                       className="btn-ghost" 
-                      style={{ padding: '0.35rem', borderRadius: '50%', border: 'none', cursor: 'pointer' }} 
+                      style={S.menuTrigger}
                       onClick={() => setMenuOpen(menuOpen === folderId ? null : folderId)}
                     >
                       <MoreVertical size={18} />
                     </button>
                     
                     {menuOpen === folderId && (
-                      <div className="glass" style={{ position: 'absolute', right: 0, top: '100%', zIndex: 20, borderRadius: '0.5rem', padding: '0.5rem', minWidth: '160px', display: 'flex', flexDirection: 'column', gap: '0.25rem', boxShadow: 'var(--shadow-lg)' }}>
-                        <button className="btn-ghost" style={{ textAlign: 'left', padding: '0.5rem', border: 'none', cursor: 'pointer', borderRadius: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => openEditModal(folder)}>
+                      <div className="glass" style={S.contextMenu}>
+                        <button className="btn-ghost" style={S.menuItem} onClick={() => openEditModal(folder)}>
                           Editar
                         </button>
-                        <button className="btn-ghost" style={{ textAlign: 'left', padding: '0.5rem', border: 'none', cursor: 'pointer', borderRadius: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => handleDuplicate(folder)}>
+                        <button className="btn-ghost" style={S.menuItem} onClick={() => handleDuplicate(folder)}>
                           <Copy size={14} /> Duplicar Flujo
                         </button>
-                        <button className="btn-ghost" style={{ textAlign: 'left', padding: '0.5rem', border: 'none', cursor: 'pointer', borderRadius: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => handleExportJSON(folder, folderCommands)}>
+                        <button className="btn-ghost" style={S.menuItem} onClick={() => handleExportJSON(folder, folderCommands)}>
                           <Download size={14} /> Exportar JSON
                         </button>
-                        <hr style={{ borderColor: 'var(--card-border)', margin: '0.25rem 0' }} />
-                        <button className="btn-ghost" style={{ textAlign: 'left', padding: '0.5rem', border: 'none', cursor: 'pointer', color: 'var(--danger)', borderRadius: '0.25rem' }} onClick={() => handleDelete(folder)}>
+                        <hr style={S.menuDivider} />
+                        <button className="btn-ghost" style={S.menuItemDanger} onClick={() => handleDelete(folder)}>
                           Eliminar
                         </button>
                       </div>
@@ -376,15 +362,15 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div style={{ flex: 1, marginTop: '0.5rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.35rem', color: 'var(--text-main)' }}>{folder.name}</h3>
-                  {folder.title && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{folder.title}</p>}
+                <div style={S.folderCardBody}>
+                  <h3 style={S.folderName}>{folder.name}</h3>
+                  {folder.title && <p style={S.folderTitle}>{folder.title}</p>}
 
                   {/* Tags */}
                   {folder.tags && folder.tags.length > 0 && (
-                    <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                    <div style={S.tagsRow}>
                       {folder.tags.map((t, idx) => (
-                        <span key={idx} style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', borderRadius: '0.4rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)' }}>
+                        <span key={idx} style={S.tagChip}>
                           #{t}
                         </span>
                       ))}
@@ -392,16 +378,16 @@ export default function Dashboard() {
                   )}
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Command size={14} /> {folderCommands.length} comando(s)</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Clock size={14} /> {updateDate}</span>
+                <div style={S.folderCardFooter}>
+                  <div style={S.folderMetaRow}>
+                    <span style={S.metaItem}><Command size={14} /> {folderCommands.length} comando(s)</span>
+                    <span style={S.metaItem}><Clock size={14} /> {updateDate}</span>
                   </div>
                   
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={S.folderButtonsRow}>
                     <button 
                       className="btn btn-ghost" 
-                      style={{ flex: 1, padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }} 
+                      style={S.pdfButton}
                       onClick={(e) => {
                         e.stopPropagation();
                         generateDashboardPDF(folder, folderCommands);
@@ -412,7 +398,7 @@ export default function Dashboard() {
                     </button>
                     <button 
                       className="btn btn-primary" 
-                      style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }} 
+                      style={S.openButton}
                       onClick={() => navigate(`/folder/${folderId}`)}
                     >
                       <FolderOpen size={16} /> Abrir carpeta
@@ -429,13 +415,13 @@ export default function Dashboard() {
       {isModalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content glass" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', fontWeight: 700 }}>
+            <h2 style={S.modalTitle}>
               {editingFolder ? 'Editar Carpeta de Flujo' : 'Generar Nueva Carpeta'}
             </h2>
             <form onSubmit={handleCreateOrEdit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={S.modalFormBody}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  <label style={S.fieldLabel}>
                     Nombre de la carpeta *
                   </label>
                   <input 
@@ -450,7 +436,7 @@ export default function Dashboard() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  <label style={S.fieldLabel}>
                     Categoría
                   </label>
                   <select 
@@ -459,7 +445,7 @@ export default function Dashboard() {
                     onChange={e => setFolderForm({ ...folderForm, category: e.target.value })}
                   >
                     {WORKFLOW_CATEGORIES.filter(c => c !== 'Todos').map(c => (
-                      <option key={c} value={c} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={c} value={c} style={S.selectOption}>
                         {c}
                       </option>
                     ))}
@@ -467,7 +453,7 @@ export default function Dashboard() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  <label style={S.fieldLabel}>
                     Etiquetas (separadas por coma)
                   </label>
                   <input 
@@ -480,7 +466,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <div style={S.modalFooter}>
                 <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="btn btn-primary">
                   {editingFolder ? 'Guardar Cambios' : 'Crear Carpeta'}

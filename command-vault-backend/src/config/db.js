@@ -30,22 +30,29 @@ const connectDB = async () => {
       console.log('   ⚠️  CAMBIA ESTA CONTRASEÑA INMEDIATAMENTE.\n');
     }
 
-    // Auto-seed company areas if empty
-    const Area = require('../models/Area');
-    const areaCount = await Area.countDocuments();
-    if (areaCount === 0) {
-      const defaultAreas = [
-        'Contabilidad',
-        'Ventas',
-        'Capital Humano',
-        'Diseño',
-        'Metrología-Calidad',
-        'Máquinas CNC',
-        'STE-PPL'
-      ];
-      await Area.insertMany(defaultAreas.map(name => ({ name })));
-      console.log('Default areas seeded successfully');
+    // Auto-seed company departments if empty
+    const Department = require('../models/Department');
+    const defaultDepartments = [
+      'Contabilidad',
+      'Ventas',
+      'Capital Humano',
+      'Diseño',
+      'Metrología-Calidad',
+      'Máquinas CNC',
+      'STE-PPL',
+      'Sistemas',
+      'Logística',
+      'Producción',
+      'Dirección'
+    ];
+
+    for (const name of defaultDepartments) {
+      const exists = await Department.findOne({ name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } });
+      if (!exists) {
+        await Department.create({ name });
+      }
     }
+    console.log('✅ Departments verified and seeded in "departments" collection');
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);

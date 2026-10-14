@@ -4,6 +4,7 @@ import { Terminal, User, Lock } from 'lucide-react';
 import { showError } from '../utils/alerts';
 import FormField from './ui/FormField';
 import PasswordField from './ui/PasswordField';
+import { LoginStyles } from '../styles/loginStyles';
 
 export default function Login() {
   const { login } = useAuth();
@@ -45,39 +46,24 @@ export default function Login() {
   const clearFieldError = (field) => setErrors(prev => ({ ...prev, [field]: null, form: null }));
 
   return (
-    <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '1rem' }}>
-      <div className="glass animate-fade-in" style={{
-        padding: '2.75rem',
-        borderRadius: '1.5rem',
-        width: '100%',
-        maxWidth: '440px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '2rem',
-        boxShadow: 'var(--shadow-lg)'
-      }}>
+    <div className="app-container" style={LoginStyles.wrapper}>
+      <div className="glass animate-fade-in" style={LoginStyles.card}>
 
         {/* ── Logo / Cabecera ── */}
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            display: 'inline-flex', padding: '1.1rem', borderRadius: '50%',
-            background: 'rgba(59,130,246,0.12)',
-            color: 'var(--primary)', marginBottom: '1.1rem',
-            border: '1.5px solid rgba(59,130,246,0.25)',
-            boxShadow: '0 0 24px rgba(59,130,246,0.15)'
-          }}>
+        <div style={LoginStyles.header}>
+          <div style={LoginStyles.logoIconContainer}>
             <Terminal size={34} />
           </div>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, letterSpacing: '0.04em', color: 'var(--text-main)', margin: 0 }}>
+          <h1 style={LoginStyles.title}>
             COMMAND VAULT
           </h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '0.4rem', fontSize: '0.875rem' }}>
+          <p style={LoginStyles.subtitle}>
             Gestión centralizada de flujos y equipos
           </p>
         </div>
 
         {/* ── Formulario ── */}
-        <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+        <form onSubmit={handleSubmit} noValidate style={LoginStyles.form}>
 
           <FormField
             label="Usuario"
@@ -90,7 +76,7 @@ export default function Login() {
               id="login-username"
               type="text"
               className={`input-field${errors.username ? ' input-error' : ''}`}
-              style={{ paddingLeft: '2.5rem' }}
+              style={LoginStyles.input}
               placeholder="Ingresa tu usuario..."
               value={username}
               onChange={e => { setUsername(e.target.value); clearFieldError('username'); }}
@@ -118,14 +104,7 @@ export default function Login() {
 
           {/* Error general del servidor */}
           {errors.form && (
-            <div style={{
-              padding: '0.65rem 1rem',
-              borderRadius: '0.5rem',
-              background: 'rgba(239,68,68,0.08)',
-              border: '1px solid rgba(239,68,68,0.25)',
-              color: '#f87171',
-              fontSize: '0.82rem'
-            }}>
+            <div style={LoginStyles.errorMessage}>
               {errors.form}
             </div>
           )}
@@ -135,11 +114,11 @@ export default function Login() {
             type="submit"
             className="btn btn-primary"
             disabled={isSubmitting}
-            style={{ marginTop: '0.5rem', padding: '0.875rem', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            style={LoginStyles.submitButton}
           >
             {isSubmitting ? (
               <>
-                <span className="animate-spin" style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
+                <span className="animate-spin" style={LoginStyles.spinner} />
                 Verificando...
               </>
             ) : (
@@ -149,8 +128,8 @@ export default function Login() {
         </form>
 
         {/* ── Footer de seguridad ── */}
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.72rem', margin: 0 }}>
-          <Lock size={12} style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} />
+        <p style={LoginStyles.footer}>
+          <Lock size={12} style={LoginStyles.footerIcon} />
           Acceso protegido — Solo personal autorizado
         </p>
       </div>

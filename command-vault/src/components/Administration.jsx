@@ -14,6 +14,9 @@ import Badge from './ui/Badge';
 import StatusDot from './ui/StatusDot';
 import EmptyState from './ui/EmptyState';
 
+// Estilos
+import AdministrationStyles from '../styles/administrationStyles';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Estado inicial del formulario
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,13 +38,15 @@ export default function Administration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors]   = useState({});
 
+  const S = AdministrationStyles;
+
   // ─── Guard: Solo administradores ───────────────────────────────────────────
   if (currentUser?.role !== 'admin') {
     return (
-      <div className="glass animate-fade-in" style={{ padding: '3rem', textAlign: 'center', borderRadius: '1rem', marginTop: '2rem' }}>
-        <Shield size={48} style={{ color: 'var(--danger)', margin: '0 auto 1rem' }} />
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Acceso Restringido</h2>
-        <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+      <div className="glass animate-fade-in" style={S.restrictedCard}>
+        <Shield size={48} style={S.restrictedIcon} />
+        <h2 style={S.restrictedTitle}>Acceso Restringido</h2>
+        <p style={S.restrictedText}>
           Se requieren privilegios de Administrador para ver esta sección.
         </p>
       </div>
@@ -188,16 +193,18 @@ export default function Administration() {
     <div className="animate-fade-in">
 
       {/* ── Encabezado ── */}
-      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={S.pageHeader}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.35rem' }}>Administración de Usuarios</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Gestiona accesos, roles y notificaciones del sistema</p>
+          <h1 style={S.pageTitle}>Administración de Usuarios</h1>
+          <p style={S.pageSubtitle}>Gestiona accesos, roles y notificaciones del sistema</p>
         </div>
-        <button className="btn btn-primary" onClick={() => openModal()} id="btn-add-user"> <UserPlus size={16} /> Agregar Usuario</button>
+        <button className="btn btn-primary" onClick={() => openModal()} id="btn-add-user">
+          <UserPlus size={16} /> Agregar Usuario
+        </button>
       </div>
 
       {/* ── Stats rápidas ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={S.statsGrid}>
         <StatCard label="Total usuarios" value={users.length} icon={<Users size={20} />} />
         <StatCard label="Activos"   value={users.filter(u => u.active).length}   color="var(--success)" />
         <StatCard label="Inactivos" value={users.filter(u => !u.active).length}  color="var(--danger)"  />
@@ -205,9 +212,9 @@ export default function Administration() {
       </div>
 
       {/* ── Tabla ── */}
-      <div className="glass" style={{ borderRadius: '1rem', overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-        <table className="data-table" style={{ minWidth: 640 }}>
+      <div className="glass" style={S.tableCard}>
+        <div style={S.tableScroll}>
+          <table className="data-table" style={S.table}>
             <thead>
               <tr>
                 {['Nombre', 'Usuario', 'Correo', 'Rol', 'Estado', 'Acciones'].map(h => (
@@ -228,29 +235,29 @@ export default function Administration() {
                   const isSelf = uId === currentUserId;
                   return (
                     <tr key={uId}>
-                      <td style={{ padding: '0.875rem 1.25rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                      <td style={S.tdName}>
                         {user.name}
-                        {isSelf && <Badge variant="accent" style={{ marginLeft: '0.5rem', fontSize: '0.65rem' }}>Tú</Badge>}
+                        {isSelf && <Badge variant="accent" style={S.selfBadge}>Tú</Badge>}
                       </td>
-                      <td style={{ padding: '0.875rem 1.25rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85rem' }}>
+                      <td style={S.tdUsername}>
                         @{user.username}
                       </td>
-                      <td style={{ padding: '0.875rem 1.25rem' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      <td style={S.tdEmail}>
+                        <span style={S.emailCell}>
                           <Mail size={14} />
-                          {user.email || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Sin correo</span>}
+                          {user.email || <span style={S.noEmailText}>Sin correo</span>}
                         </span>
                       </td>
-                      <td style={{ padding: '0.875rem 1.25rem' }}>
+                      <td style={S.tdBadge}>
                         <Badge variant={user.role === 'admin' ? 'accent' : 'primary'}>
                           {user.role === 'admin' ? 'Administrador' : 'Usuario'}
                         </Badge>
                       </td>
-                      <td style={{ padding: '0.875rem 1.25rem' }}>
+                      <td style={S.tdStatus}>
                         <StatusDot active={user.active} />
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'flex-end' }}>
+                        <div style={S.tdActions}>
                           <button
                             id={`btn-edit-${uId}`}
                             className="btn-icon"
@@ -300,28 +307,28 @@ export default function Administration() {
         size="md"
       >
         <form onSubmit={handleSubmit} noValidate>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', marginBottom: '1.5rem' }}>
+          <div style={S.modalFormBody}>
 
             <FormField label="Nombre Completo" id="field-name" required error={formErrors.name}>
               <input id="field-name" type="text" className={`input-field${formErrors.name ? ' input-error' : ''}`} value={formData.name} onChange={e => setField('name', e.target.value)} placeholder="Ej. Juan Pérez" autoFocus/>
             </FormField>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={S.twoColumnGrid}>
               <FormField label="Usuario" id="field-username" required error={formErrors.username} hint="Solo letras, números, puntos y guiones">
                 <input id="field-username" type="text" className={`input-field${formErrors.username ? ' input-error' : ''}`} value={formData.username} onChange={e => setField('username', e.target.value.toLowerCase())} placeholder="ej. juan.perez"/>
               </FormField>
 
               <FormField label="Rol del Sistema" id="field-role">
                 <select id="field-role" className="input-field" value={formData.role} onChange={e => setField('role', e.target.value)}>
-                  <option value="user"  style={{ background: '#1e293b' }}>Usuario Regular</option>
-                  <option value="admin" style={{ background: '#1e293b' }}>Administrador</option>
+                  <option value="user"  style={S.selectOption}>Usuario Regular</option>
+                  <option value="admin" style={S.selectOption}>Administrador</option>
                 </select>
               </FormField>
             </div>
 
             <FormField label="Correo Electrónico" id="field-email" required error={formErrors.email}
               icon={<Mail size={16} />}>
-              <input id="field-email" type="email" className={`input-field${formErrors.email ? ' input-error' : ''}`} style={{ paddingLeft: '2.5rem' }} value={formData.email} onChange={e => setField('email', e.target.value)} placeholder="correo@empresa.com" autoComplete="email"/>
+              <input id="field-email" type="email" className={`input-field${formErrors.email ? ' input-error' : ''}`} style={S.emailInput} value={formData.email} onChange={e => setField('email', e.target.value)} placeholder="correo@empresa.com" autoComplete="email"/>
             </FormField>
 
             <FormField label={isEditing ? 'Nueva Contraseña (dejar en blanco para no cambiar)' : 'Contraseña'} id="field-password" required={!isEditing} error={formErrors.password}>
@@ -332,7 +339,7 @@ export default function Administration() {
           </div>
 
           {/* Acciones */}
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+          <div style={S.modalFooter}>
             <button type="button" className="btn btn-ghost" onClick={closeModal} disabled={isSubmitting}>
               Cancelar
             </button>
@@ -352,16 +359,17 @@ export default function Administration() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, icon, color }) {
+  const S = AdministrationStyles;
   return (
-    <div className="glass" style={{ padding: '1rem 1.25rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+    <div className="glass" style={S.statCard}>
       {icon && (
-        <div style={{ color: color || 'var(--primary)', opacity: 0.8 }}>{icon}</div>
+        <div style={S.statIcon(color)}>{icon}</div>
       )}
       <div>
-        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: color || 'var(--text-main)', lineHeight: 1 }}>
+        <div style={S.statValue(color)}>
           {value}
         </div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+        <div style={S.statLabel}>
           {label}
         </div>
       </div>

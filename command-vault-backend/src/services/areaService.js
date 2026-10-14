@@ -1,20 +1,20 @@
-const areaRepo = require('../repositories/areaRepository');
+const departmentRepo = require('../repositories/departmentRepository');
 
 class AreaService {
   async getAllAreas() {
-    return await areaRepo.findAll();
+    return await departmentRepo.findAll();
   }
 
   async createArea(name) {
     if (!name || typeof name !== 'string' || !name.trim()) {
-      throw new Error('El nombre del área es requerido');
+      throw new Error('El nombre del área o departamento es requerido');
     }
     const cleanName = name.trim();
-    const existing = await areaRepo.findByName(cleanName);
+    const existing = await departmentRepo.findByName(cleanName);
     if (existing) {
       return existing; // Idempotent
     }
-    return await areaRepo.create({ name: cleanName });
+    return await departmentRepo.create({ name: cleanName });
   }
 }
 

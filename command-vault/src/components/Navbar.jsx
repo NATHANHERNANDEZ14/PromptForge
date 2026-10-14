@@ -1,24 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import {
-  LayoutDashboard,
-  TerminalSquare,
-  Users,
-  LogOut,
-  Terminal,
-  Bell,
-  Laptop,
-  ShieldAlert,
-  CheckCircle2,
-  Info,
-  AlertTriangle,
-  BellOff,
-  ChevronRight,
-  UserSquare2,
-  Trash2
-} from 'lucide-react';
+import {LayoutDashboard, TerminalSquare, Users, LogOut, Terminal, Bell, Laptop, ShieldAlert, CheckCircle2, Info, AlertTriangle, BellOff, ChevronRight, UserSquare2, Trash2} from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { notificationsApi } from '../services/api';
+
+// Estilos
+import NavbarStyles from '../styles/navbarStyles';
+
+const S = NavbarStyles;
 
 // ── Notification type config ────────────────────────────────────────────────
 const NOTIF_CONFIG = {
@@ -53,30 +42,21 @@ function NotificationPanel({ notifications, onClose, onClearAll }) {
           <Bell size={15} />
           Notificaciones
           {unread > 0 && (
-            <span className="badge badge-danger" style={{ fontSize: '0.65rem' }}>
+            <span className="badge badge-danger" style={S.panelBadge}>
               {unread} nuevas
             </span>
           )}
         </span>
-        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+        <div style={S.panelActions}>
           {notifications.length > 0 && (
-            <button
-              className="btn-icon"
-              onClick={onClearAll}
-              title="Limpiar todas"
-              style={{ width: 28, height: 28, border: 'none', color: 'var(--text-muted)' }}
+            <button className="btn-icon" onClick={onClearAll} title="Limpiar todas" style={S.panelClearBtn}
               onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-dim)'; }}
               onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
             >
               <Trash2 size={13} />
             </button>
           )}
-          <button
-            className="btn-icon"
-            onClick={onClose}
-            title="Cerrar"
-            style={{ width: 28, height: 28, border: 'none', color: 'var(--text-muted)' }}
-          >
+          <button className="btn-icon" onClick={onClose} title="Cerrar" style={S.panelCloseBtn}>
             <ChevronRight size={14} />
           </button>
         </div>
@@ -193,46 +173,23 @@ export default function Navbar() {
     }}>
 
       {/* ── Brand ─────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flex: '0 0 auto' }}>
-        <Link
-          to="/"
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.6rem',
-            color: 'var(--primary)', fontWeight: 800, fontSize: '1.05rem',
-            letterSpacing: '0.06em', textDecoration: 'none',
-          }}
-        >
-          <div style={{
-            width: 32, height: 32, borderRadius: 'var(--radius-sm)',
-            background: 'var(--primary-dim)',
-            border: '1px solid rgba(58,134,255,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+      <div style={S.brandGroup}>
+        <Link to="/" style={S.brandLink}>
+          <div style={S.brandIconBox}>
             <Terminal size={17} strokeWidth={2.5} />
           </div>
           COMMAND VAULT
         </Link>
 
         {/* ── Nav links ───────────────────────── */}
-        <div style={{ display: 'flex', gap: '0.25rem' }}>
+        <div style={S.linksGroup}>
           {navItems.map(({ name, path, Icon }) => {
             const active = isActive(path);
             return (
               <Link
                 key={path}
                 to={path}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.45rem 0.875rem',
-                  borderRadius: 'var(--radius-sm)',
-                  textDecoration: 'none',
-                  fontSize: '0.845rem',
-                  fontWeight: active ? 600 : 500,
-                  color: active ? 'var(--text-main)' : 'var(--text-muted)',
-                  background: active ? 'rgba(58,134,255,0.12)' : 'transparent',
-                  border: `1px solid ${active ? 'rgba(58,134,255,0.25)' : 'transparent'}`,
-                  transition: 'var(--transition-fast)',
-                }}
+                style={S.navLink(active)}
                 onMouseEnter={e => {
                   if (!active) {
                     e.currentTarget.style.color = 'var(--text-secondary)';
@@ -255,77 +212,39 @@ export default function Navbar() {
       </div>
 
       {/* ── Right actions ─────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '0 0 auto' }}>
+      <div style={S.rightActions}>
 
         {/* Notificaciones (solo admin) */}
         {currentUser?.role === 'admin' && (
-          <div ref={panelRef} style={{ position: 'relative' }}>
-            <button
-              className="btn-icon"
-              onClick={handleToggleNotifs}
-              title="Notificaciones"
-              style={{
-                width: 38, height: 38,
-                border: '1px solid var(--card-border)',
-                color: showNotifs ? 'var(--primary)' : 'var(--text-muted)',
-                background: showNotifs ? 'var(--primary-dim)' : 'transparent',
-                position: 'relative',
-              }}
-            >
+          <div ref={panelRef} style={S.notifBtnWrapper}>
+            <button className="btn-icon" onClick={handleToggleNotifs} title="Notificaciones" style={S.notifButton(showNotifs)}>
               <Bell size={17} strokeWidth={showNotifs ? 2.5 : 2} />
               {unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: 5, right: 5,
-                  background: 'var(--danger)',
-                  width: 7, height: 7,
-                  borderRadius: '50%',
-                  border: '1.5px solid var(--bg-color)',
-                }} />
+                <span style={S.notifBadge} />
               )}
             </button>
 
             {showNotifs && (
-              <NotificationPanel
-                notifications={notifications}
-                onClose={() => setShowNotifs(false)}
-                onClearAll={handleClearAll}
-              />
+              <NotificationPanel notifications={notifications} onClose={() => setShowNotifs(false)} onClearAll={handleClearAll}/>
             )}
           </div>
         )}
 
         {/* Separador */}
-        <div style={{ width: 1, height: 22, background: 'var(--card-border)' }} />
+        <div style={S.divider} />
 
         {/* Avatar + nombre */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '0.6rem',
-          padding: '0.35rem 0.75rem',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--card-border)',
-          background: 'rgba(255,255,255,0.03)',
-        }}>
-          <div style={{
-            width: 28, height: 28,
-            borderRadius: 'var(--radius-sm)',
-            background: 'linear-gradient(135deg, var(--primary), var(--accent))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 700, fontSize: '0.8rem',
-            flexShrink: 0,
-          }}>
+        <div style={S.userProfile}>
+          <div style={S.userAvatar}>
             {currentUser?.name?.charAt(0).toUpperCase()}
           </div>
-          <span style={{ fontSize: '0.845rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+          <span style={S.userName}>
             {currentUser?.name}
           </span>
         </div>
 
         {/* Logout */}
-        <button
-          onClick={logout}
-          className="btn-icon"
-          title="Cerrar sesión"
-          style={{ width: 38, height: 38, border: '1px solid var(--card-border)', color: 'var(--text-muted)' }}
+        <button onClick={logout} className="btn-icon" title="Cerrar sesión" style={S.logoutButton}
           onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.background = 'var(--danger-dim)'; }}
           onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.background = 'transparent'; }}
         >

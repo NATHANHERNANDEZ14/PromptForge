@@ -146,10 +146,22 @@ export const notificationsApi = {
   })
 };
 
-// --- Areas API ---
+// --- Departments API ---
+export const departmentsApi = {
+  getAll: () => apiRequest('/departments'),
+  create: (name, description = '') => apiRequest('/departments', {
+    method: 'POST',
+    body: JSON.stringify({ name, description })
+  }),
+  delete: (id) => apiRequest(`/departments/${id}`, {
+    method: 'DELETE'
+  })
+};
+
+// --- Areas API (Alias) ---
 export const areasApi = {
-  getAll: () => apiRequest('/areas'),
-  create: (name) => apiRequest('/areas', {
+  getAll: () => apiRequest('/departments'),
+  create: (name) => apiRequest('/departments', {
     method: 'POST',
     body: JSON.stringify({ name })
   })
@@ -182,6 +194,7 @@ export default {
   devices: devicesApi,
   users: usersApi,
   notifications: notificationsApi,
+  departments: departmentsApi,
   areas: areasApi,
   employees: employeesApi,
   API_URL

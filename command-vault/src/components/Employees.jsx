@@ -2,38 +2,37 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Users, UserPlus, Edit2, Trash2, Search, Building2,
   Hash, User, ChevronDown, X, Save, Loader2,
-  ShieldAlert, BadgeCheck, RefreshCw
+  ShieldAlert, BadgeCheck, RefreshCw, PlusCircle
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
-import { employeesApi } from '../services/api';
+import { employeesApi, departmentsApi } from '../services/api';
 import { confirmDialog, showToast, showError } from '../utils/alerts';
 import Modal from './ui/Modal';
 import FormField from './ui/FormField';
 import EmptyState from './ui/EmptyState';
 import Badge from './ui/Badge';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Constantes
-// ─────────────────────────────────────────────────────────────────────────────
-const DEPARTAMENTOS = [
-  'Contabilidad', 'Ventas', 'Capital Humano', 'Diseño',
-  'Metrología-Calidad', 'Máquinas CNC', 'STE-PPL',
-  'Sistemas', 'Logística', 'Producción', 'Dirección'
-];
+import { EmployeesStyles } from '../styles/employeesStyles';
 
 const EMPTY_FORM = {
   noNomina: '', nombre: '', apellidoPaterno: '',
-  apellidoMaterno: '', departamento: DEPARTAMENTOS[0], activo: true
+  apellidoMaterno: '', departamento: '', activo: true
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EmployeeModal — Crear / Editar
 // ─────────────────────────────────────────────────────────────────────────────
-function EmployeeModal({ employee, onClose, onSave }) {
+function EmployeeModal({ employee, departments = [], onAddNewDepartment, onClose, onSave }) {
   const isEditing = Boolean(employee?._id || employee?.id);
-  const [form, setForm]           = useState(isEditing ? { ...EMPTY_FORM, ...employee } : { ...EMPTY_FORM });
+  const [form, setForm]           = useState(isEditing ? { ...EMPTY_FORM, ...employee } : { ...EMPTY_FORM, departamento: departments[0]?.name || '' });
   const [errors, setErrors]       = useState({});
   const [saving, setSaving]       = useState(false);
+
+  useEffect(() => {
+    if (!isEditing && !form.departamento && departments.length > 0) {
+      setForm(prev => ({ ...prev, departamento: departments[0].name }));
+    }
+  }, [departments, isEditing, form.departamento]);
 
   const set = (field, val) => {
     setForm(prev => ({ ...prev, [field]: val }));
@@ -76,7 +75,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
       size="md"
     >
       <form onSubmit={handleSubmit} noValidate>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div style={EmployeesStyles.modalFormBody}>
 
           {/* No. Nómina */}
           <FormField label="No. Nómina" id="emp-nomina" required error={errors.noNomina}
@@ -84,7 +83,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
             <input
               id="emp-nomina"
               className={`input-field${errors.noNomina ? ' input-error' : ''}`}
-              style={{ paddingLeft: '2.5rem' }}
+              style={EmployeesStyles.deptFilterSelect}
               value={form.noNomina}
               onChange={e => set('noNomina', e.target.value.toUpperCase())}
               placeholder="Ej. NOM-8492"
@@ -98,7 +97,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
             <input
               id="emp-nombre"
               className={`input-field${errors.nombre ? ' input-error' : ''}`}
-              style={{ paddingLeft: '2.5rem' }}
+              style={EmployeesStyles.deptFilterSelect}
               value={form.nombre}
               onChange={e => set('nombre', e.target.value)}
               placeholder="Ej. Juan Carlos"
@@ -106,7 +105,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
           </FormField>
 
           {/* Apellidos en grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div style={EmployeesStyles.modalFormGrid}>
             <FormField label="Apellido Paterno" id="emp-ap" required error={errors.apellidoPaterno}>
               <input
                 id="emp-ap"
@@ -129,32 +128,52 @@ function EmployeeModal({ employee, onClose, onSave }) {
           </div>
 
           {/* Departamento */}
-          <FormField label="Departamento" id="emp-dept" required error={errors.departamento}
-            icon={<Building2 size={15} />}>
+          <div>
+            <div style={EmployeesStyles.deptHeaderRow}>
+              <label style={EmployeesStyles.deptLabel}>
+                <Building2 size={13} /> Departamento *
+              </label>
+              {onAddNewDepartment && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const newName = await onAddNewDepartment();
+                    if (newName) set('departamento', newName);
+                  }}
+                  style={EmployeesStyles.newDeptBtn}
+                >
+                  <PlusCircle size={12} /> + Nuevo
+                </button>
+              )}
+            </div>
             <select
               id="emp-dept"
               className={`input-field${errors.departamento ? ' input-error' : ''}`}
-              style={{ paddingLeft: '2.5rem' }}
               value={form.departamento}
               onChange={e => set('departamento', e.target.value)}
             >
-              {DEPARTAMENTOS.map(d => (
-                <option key={d} value={d} style={{ background: '#0f172a' }}>{d}</option>
-              ))}
+              {departments.length === 0 && <option value="">Cargando departamentos...</option>}
+              {departments.map(d => {
+                const name = typeof d === 'string' ? d : d.name;
+                return (
+                  <option key={d.id || name} value={name} style={EmployeesStyles.selectOption}>{name}</option>
+                );
+              })}
             </select>
-          </FormField>
+            {errors.departamento && <div style={EmployeesStyles.fieldError}>{errors.departamento}</div>}
+          </div>
 
           {/* Estado activo (solo en edición) */}
           {isEditing && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--card-border)' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontSize: '0.875rem', userSelect: 'none' }}>
+            <div style={EmployeesStyles.activeRow}>
+              <label style={EmployeesStyles.activeLabel}>
                 <input
                   type="checkbox"
                   checked={form.activo}
                   onChange={e => set('activo', e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: 'var(--success)', cursor: 'pointer' }}
+                  style={EmployeesStyles.activeCheckbox}
                 />
-                <span style={{ color: form.activo ? 'var(--success)' : 'var(--text-muted)', fontWeight: 600 }}>
+                <span style={EmployeesStyles.activeStatusText(form.activo)}>
                   {form.activo ? 'Empleado activo' : 'Empleado inactivo'}
                 </span>
               </label>
@@ -163,7 +182,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+        <div style={EmployeesStyles.modalFooter}>
           <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>
             <X size={15} /> Cancelar
           </button>
@@ -184,13 +203,13 @@ function EmployeeModal({ employee, onClose, onSave }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color = 'var(--primary)' }) {
   return (
-    <div className="glass" style={{ padding: '1.25rem 1.5rem', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-      <div style={{ width: 42, height: 42, borderRadius: 'var(--radius-md)', background: `${color}18`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color, flexShrink: 0 }}>
+    <div className="glass" style={EmployeesStyles.statCard}>
+      <div style={EmployeesStyles.statIconBox(color)}>
         {icon}
       </div>
       <div>
-        <div style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1, color: 'var(--text-main)' }}>{value}</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem', fontWeight: 500 }}>{label}</div>
+        <div style={EmployeesStyles.statValue}>{value}</div>
+        <div style={EmployeesStyles.statLabel}>{label}</div>
       </div>
     </div>
   );
@@ -203,11 +222,12 @@ export default function Employees() {
   const { currentUser } = useAuth();
   const isAdmin = currentUser?.role === 'admin';
 
-  const [employees, setEmployees]   = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [search, setSearch]         = useState('');
-  const [deptFilter, setDeptFilter] = useState('');
-  const [modal, setModal]           = useState(null); // null | 'create' | employee obj
+  const [employees, setEmployees]     = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState('');
+  const [deptFilter, setDeptFilter]   = useState('');
+  const [modal, setModal]             = useState(null); // null | 'create' | employee obj
 
   // ── Fetch ────────────────────────────────────────────────────────────────
   const fetchEmployees = useCallback(async () => {
@@ -222,7 +242,57 @@ export default function Employees() {
     }
   }, []);
 
-  useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const data = await departmentsApi.getAll();
+      setDepartments(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error cargando departamentos:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEmployees();
+    fetchDepartments();
+  }, [fetchEmployees, fetchDepartments]);
+
+  const handleAddNewDepartment = async () => {
+    const { value: newDeptName } = await Swal.fire({
+      title: 'Nuevo Departamento',
+      input: 'text',
+      inputLabel: 'Nombre del departamento de la empresa',
+      inputPlaceholder: 'Ej. Logística, Producción, Sistemas...',
+      showCancelButton: true,
+      confirmButtonText: 'Crear Departamento',
+      cancelButtonText: 'Cancelar',
+      background: '#161e2e',
+      color: '#f8fafc',
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#475569',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return '¡Debes ingresar un nombre para el departamento!';
+        }
+      }
+    });
+
+    if (newDeptName && newDeptName.trim()) {
+      const cleanName = newDeptName.trim();
+      try {
+        const created = await departmentsApi.create(cleanName);
+        const deptObj = created && created.name ? created : { name: cleanName };
+        setDepartments(prev => {
+          const exists = prev.some(d => (d.name || d).toLowerCase() === cleanName.toLowerCase());
+          return exists ? prev : [...prev, deptObj];
+        });
+        showToast(`Departamento "${cleanName}" creado con éxito.`);
+        return cleanName;
+      } catch (err) {
+        showError('Error al crear departamento', err.message);
+      }
+    }
+    return null;
+  };
 
   // ── Filtros locales ───────────────────────────────────────────────────────
   const filtered = employees.filter(emp => {
@@ -235,7 +305,7 @@ export default function Employees() {
   // ── Stats ─────────────────────────────────────────────────────────────────
   const activos    = employees.filter(e => e.activo).length;
   const inactivos  = employees.filter(e => !e.activo).length;
-  const depts = [...new Set(employees.map(e => e.departamento))].length;
+  const deptsCount = departments.length || [...new Set(employees.map(e => e.departamento))].length;
 
   // ── Save handler ──────────────────────────────────────────────────────────
   const handleSaved = (saved, wasEditing) => {
@@ -269,10 +339,10 @@ export default function Employees() {
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (!isAdmin) {
     return (
-      <div className="glass animate-fade" style={{ padding: '3rem', textAlign: 'center', borderRadius: 'var(--radius-lg)', marginTop: '2rem' }}>
-        <ShieldAlert size={48} style={{ color: 'var(--danger)', margin: '0 auto 1rem' }} />
-        <h2 style={{ fontSize: '1.5rem' }}>Acceso Restringido</h2>
-        <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Se requieren privilegios de Administrador.</p>
+      <div className="glass animate-fade" style={EmployeesStyles.restrictedCard}>
+        <ShieldAlert size={48} style={EmployeesStyles.restrictedIcon} />
+        <h2 style={EmployeesStyles.restrictedTitle}>Acceso Restringido</h2>
+        <p style={EmployeesStyles.restrictedText}>Se requieren privilegios de Administrador.</p>
       </div>
     );
   }
@@ -281,13 +351,13 @@ export default function Employees() {
     <div className="animate-fade">
 
       {/* ── Encabezado ────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={EmployeesStyles.header}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.35rem' }}>Empleados</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Directorio de personal de la empresa</p>
+          <h1 style={EmployeesStyles.title}>Empleados</h1>
+          <p style={EmployeesStyles.subtitle}>Directorio de personal de la empresa</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-ghost" onClick={fetchEmployees} title="Actualizar" style={{ padding: '0.6rem' }}>
+        <div style={EmployeesStyles.headerActions}>
+          <button className="btn btn-ghost" onClick={fetchEmployees} title="Actualizar" style={EmployeesStyles.refreshButton}>
             <RefreshCw size={15} />
           </button>
           <button className="btn btn-primary" onClick={() => setModal('create')} id="btn-add-employee">
@@ -297,46 +367,49 @@ export default function Employees() {
       </div>
 
       {/* ── Stats ─────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={EmployeesStyles.statsGrid}>
         <StatCard label="Total empleados" value={employees.length} icon={<Users size={20} />} color="var(--primary)" />
         <StatCard label="Activos"          value={activos}          icon={<BadgeCheck size={20} />} color="var(--success)" />
         <StatCard label="Inactivos"        value={inactivos}        icon={<ShieldAlert size={20} />} color="var(--danger)" />
-        <StatCard label="Departamentos"    value={depts}            icon={<Building2 size={20} />} color="var(--accent)" />
+        <StatCard label="Departamentos"    value={deptsCount}       icon={<Building2 size={20} />} color="var(--accent)" />
       </div>
 
       {/* ── Filtros / búsqueda ─────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <div className="search-input-wrapper" style={{ flex: '1 1 240px' }}>
+      <div style={EmployeesStyles.filterBar}>
+        <div className="search-input-wrapper" style={EmployeesStyles.searchWrapper}>
           <Search size={15} className="search-icon" />
           <input
             className="input-field"
-            style={{ paddingLeft: '2.75rem' }}
+            style={EmployeesStyles.searchInput}
             placeholder="Buscar por nombre, apellido o nómina..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div style={{ position: 'relative', minWidth: 180 }}>
-          <Building2 size={14} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+        <div style={EmployeesStyles.deptFilterWrapper}>
+          <Building2 size={14} style={EmployeesStyles.deptFilterIcon} />
           <select
             className="input-field"
-            style={{ paddingLeft: '2.5rem', paddingRight: '2rem', appearance: 'none' }}
+            style={EmployeesStyles.deptFilterSelect}
             value={deptFilter}
             onChange={e => setDeptFilter(e.target.value)}
           >
             <option value="">Todos los departamentos</option>
-            {[...new Set(employees.map(e => e.departamento))].sort().map(d => (
-              <option key={d} value={d} style={{ background: '#0f172a' }}>{d}</option>
-            ))}
+            {departments.map(d => {
+              const name = typeof d === 'string' ? d : d.name;
+              return (
+                <option key={d.id || name} value={name} style={EmployeesStyles.selectOption}>{name}</option>
+              );
+            })}
           </select>
-          <ChevronDown size={13} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <ChevronDown size={13} style={EmployeesStyles.deptFilterChevron} />
         </div>
       </div>
 
       {/* ── Tabla ─────────────────────────────────────────────────────────── */}
-      <div className="glass" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table" style={{ minWidth: 640 }}>
+      <div className="glass" style={EmployeesStyles.tableCard}>
+        <div style={EmployeesStyles.tableScroll}>
+          <table className="data-table" style={EmployeesStyles.table}>
             <thead>
               <tr>
                 {['No. Nómina', 'Nombre completo', 'Departamento', 'Estado', 'Acciones'].map(h => (
@@ -347,8 +420,8 @@ export default function Employees() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '3rem' }}>
-                    <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', color: 'var(--primary)', display: 'inline-block' }} />
+                  <td colSpan="5" style={EmployeesStyles.loadingCell}>
+                    <Loader2 size={24} style={EmployeesStyles.loadingSpinner} />
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
@@ -368,19 +441,19 @@ export default function Employees() {
                     <tr key={empId}>
                       {/* No. Nómina */}
                       <td>
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600, background: 'var(--primary-dim)', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-xs)' }}>
+                        <span style={EmployeesStyles.nominaBadge}>
                           {emp.noNomina}
                         </span>
                       </td>
 
                       {/* Nombre completo */}
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)', background: 'linear-gradient(135deg, var(--primary), var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
+                        <div style={EmployeesStyles.employeeRowInfo}>
+                          <div style={EmployeesStyles.employeeAvatar}>
                             {emp.nombre?.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                            <div style={EmployeesStyles.employeeName}>
                               {emp.nombre} {emp.apellidoPaterno} {emp.apellidoMaterno}
                             </div>
                           </div>
@@ -396,14 +469,14 @@ export default function Employees() {
 
                       {/* Estado */}
                       <td>
-                        <span className={`status-dot ${emp.activo ? '' : 'inactive'}`} style={{ color: emp.activo ? 'var(--success)' : 'var(--text-muted)' }}>
+                        <span className={`status-dot ${emp.activo ? '' : 'inactive'}`} style={EmployeesStyles.statusText(emp.activo)}>
                           {emp.activo ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
 
                       {/* Acciones */}
                       <td>
-                        <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'flex-end' }}>
+                        <div style={EmployeesStyles.actionsGroup}>
                           <button
                             id={`btn-edit-emp-${empId}`}
                             className="btn-icon"
@@ -430,7 +503,7 @@ export default function Employees() {
           </table>
         </div>
         {filtered.length > 0 && (
-          <div style={{ padding: '0.75rem 1.5rem', borderTop: '1px solid var(--card-border)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+          <div style={EmployeesStyles.tableFooter}>
             Mostrando {filtered.length} de {employees.length} empleados
           </div>
         )}
@@ -440,6 +513,8 @@ export default function Employees() {
       {modal && (
         <EmployeeModal
           employee={modal === 'create' ? null : modal}
+          departments={departments}
+          onAddNewDepartment={handleAddNewDepartment}
           onClose={() => setModal(null)}
           onSave={handleSaved}
         />
